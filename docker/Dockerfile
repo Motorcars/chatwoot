@@ -150,4 +150,11 @@ COPY --from=pre-builder /app/.git_sha /app/.git_sha
 WORKDIR /app
 
 EXPOSE 3000
-CMD bundle exec rails db:prepare && bundle exec rails s -p ${PORT:-3000} -b 0.0.0.0
+# Reduce Node.js memory usage during asset compilation
+ENV NODE_OPTIONS="--max-old-space-size=512"
+
+# Automatically prepare the database (migrate and seed)
+RUN bundle exec rails db:chatwoot_prepare
+
+# Start the Rails server
+CMD bundle exec rails s -p ${PORT:-3000} -b 0.0.0.0
