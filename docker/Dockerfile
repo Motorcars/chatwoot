@@ -16,6 +16,8 @@ COPY . .
 # Install JS deps
 RUN yarn install --frozen-lockfile
 
+# Increase Node.js memory limit before build
+
 # Build Vite assets
 RUN RAILS_ENV=production bundle exec vite build
 
