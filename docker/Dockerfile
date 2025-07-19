@@ -15,7 +15,7 @@ COPY . .
 
 # Install JS deps
 # Set higher memory limit before build
-ENV NODE_OPTIONS="--max_old_space_size=3072"
+ENV NODE_OPTIONS="--max_old_space_size=4096"
 RUN yarn build
 
 # Build Vite assets
