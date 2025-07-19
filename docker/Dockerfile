@@ -1,31 +1,23 @@
-FROM ruby:3.1
+FROM ruby:3.2
 
-# Install dependencies
-RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs libvips git
+# Install required packages
+RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs postgresql-client yarn libvips
 
 # Set working directory
 WORKDIR /app
 
-# Install gems
-COPY Gemfile Gemfile.lock ./
-RUN gem install bundler && bundle install
-
-# Copy app source
+# Copy project files
 COPY . .
 
-# Install JS deps
-# Set higher memory limit before build
-ENV NODE_OPTIONS="--max_old_space_size=4096"
-RUN yarn build
+# Install Ruby gems and Node packages
+RUN gem install bundler && bundle install
+RUN yarn install --check-files
 
-# Build Vite assets
-RUN RAILS_ENV=production bundle exec vite build
-
-# Precompile Rails assets
+# Precompile assets for production
 RUN RAILS_ENV=production bundle exec rails assets:precompile
 
-# Prepare DB (runs migrations and seeds onboarding data)
-RUN RAILS_ENV=production bundle exec rails db:chatwoot_prepare
+# Set environment
+ENV RAILS_ENV=production
 
-# Start Chatwoot server
-CMD bundle exec rails s -p ${PORT:-3000} -b 0.0.0.0
+# 🔧 Add the required CMD to start server & run migrations
+CMD ["bash", "-c", "bundle exec rails db:prepare && bundle exec puma -C config/puma.rb"]
