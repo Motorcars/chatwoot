@@ -14,9 +14,9 @@ RUN gem install bundler && bundle install
 COPY . .
 
 # Install JS deps
-RUN yarn install --frozen-lockfile
-
-# Increase Node.js memory limit before build
+# Set higher memory limit before build
+ENV NODE_OPTIONS="--max_old_space_size=2048"
+RUN yarn build
 
 # Build Vite assets
 RUN RAILS_ENV=production bundle exec vite build
