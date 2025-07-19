@@ -1,21 +1,21 @@
-# Use official Ruby base image
 FROM ruby:3.2
 
-# Install dependencies
-RUN apt-get update -qq && apt-get install -y nodejs postgresql-client yarn build-essential libvips
+# Install essential system packages
+RUN apt-get update -qq && \
+    apt-get install -y build-essential libpq-dev nodejs yarn postgresql-client libvips
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Copy Gemfiles first for caching
+# Copy only Gemfiles first (for Docker caching)
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
-# Copy the rest of the application
+# Copy the full app
 COPY . .
 
-# Precompile assets (if using Rails with webpacker or jsbundling-rails)
+# Precompile assets (skip if not using Rails assets)
 RUN bundle exec rake assets:precompile
 
-# Run DB migrations automatically before starting server
+# Run DB migration and then start the app
 CMD bundle exec rails db:migrate && bundle exec puma -C config/puma.rb
