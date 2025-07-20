@@ -1,24 +1,45 @@
 FROM ruby:3.2.2
 
-# Install dependencies
-RUN apt-get update -qq && apt-get install -y nodejs postgresql-client yarn imagemagick libvips
+# Install system dependencies
+RUN apt-get update -qq && apt-get install -y \
+  build-essential \
+  libpq-dev \
+  nodejs \
+  curl \
+  postgresql-client \
+  yarn \
+  imagemagick \
+  libvips
+
+# Install bundler
+RUN gem install bundler
 
 # Set working directory
 WORKDIR /app
 
-# Copy Gemfiles and install
-COPY Gemfile* ./
-RUN gem install bundler && bundle install
+# Set environment variables (use ENV for proper asset builds)
+ENV RAILS_ENV=production \
+    NODE_ENV=production \
+    RAILS_LOG_TO_STDOUT=true
+
+# Copy Gemfiles and install gems
+COPY Gemfile Gemfile.lock ./
+RUN bundle install --without development test
 
 # Copy project files
 COPY . .
 
-# Precompile assets and run DB setup
-RUN RAILS_ENV=production bundle exec rake assets:precompile
-RUN RAILS_ENV=production bundle exec rake db:prepare
+# Install JS dependencies (if using yarn for webpacker etc.)
+RUN yarn install --frozen-lockfile || true
 
-# Expose port
+# Precompile assets
+RUN bundle exec rake assets:precompile
+
+# Run DB setup (but allow skipping if DB not yet available)
+RUN bundle exec rake db:prepare || echo "Database not ready, skipping..."
+
+# Expose app port
 EXPOSE 3000
 
-# Start server
+# Start the app
 CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
